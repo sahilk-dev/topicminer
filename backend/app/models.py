@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Integer, ForeignKey, DateTime
+from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Float
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -24,3 +24,13 @@ class Comment(Base):
     published_at = Column(DateTime)
 
     video = relationship("Video", back_populates="comments")
+
+class CommentClassification(Base):
+    __tablename__ = "comment_classifications"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    comment_id = Column(UUID(as_uuid=True), ForeignKey("comments.id"), nullable=False)
+    category = Column(String, nullable=False)
+    confidence = Column(Float, nullable=True)
+
+    comment = relationship("Comment")

@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Video, Comment
 from app.services.youtube import extract_video_id, fetch_comments
+from app.services.classify import classify_comments_in_batches
+from app.models import CommentClassification
 
 app = FastAPI(title="TopicMiner API")
 
@@ -48,3 +50,25 @@ def analyze_video(request: VideoRequest, db: Session = Depends(get_db)):
         return {"video_id": video_id, "comment_count": len(comments)}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/videos/{video_id}/classify")
+def classify_video_comments(video_id: str, db: Session = Depends(get_db)):
+    video = db.query(Video).filter(Video.youtube_video_id == video_id).first()
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found — analyze it first")
+
+    comments = db.query(Comment).filter(Comment.video_id == video.id).all()
+    comment_dicts = [{"id": str(c.id), "body": c.body} for c in comments]
+
+    classifications = classify_comments_in_batches(comment_dicts)
+
+    for result in classifications:
+        db.add(CommentClassification(
+            comment_id=result["id"],
+            category=result["category"],
+            confidence=result.get("confidence"),
+        ))
+    db.commit()
+
+    return {"classified_count": len(classifications)}
