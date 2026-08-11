@@ -32,5 +32,18 @@ class CommentClassification(Base):
     comment_id = Column(UUID(as_uuid=True), ForeignKey("comments.id"), nullable=False)
     category = Column(String, nullable=False)
     confidence = Column(Float, nullable=True)
+    topic_albel_raw = Column(String, nullable=True)
+    cluster_id = Column(UUID(as_uuid=True), ForeignKey("topic_clusters.id"), nullable=True)
 
     comment = relationship("Comment")
+
+class TopicCluster(Base):
+    __tablename__ = "topic_clusters"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    video_id = Column(UUID(as_uuid=True), ForeignKey("videos.id"), nullable=False)
+    cluster_name = Column(String, nullable=False)
+    mention_count = Column(Integer, default=0)
+    rank = Column(Integer, nullable=True)
+
+    video = relationship("Video")
